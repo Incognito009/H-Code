@@ -156,6 +156,13 @@ except:
     exit(1)
 
 try:
+    CHANNEL_ID = getConfig("CHANNEL_ID")
+    if CHANNEL_ID.isdecimal():
+        CHANNEL_ID = int(CHANNEL_ID)
+except:
+    CHANNEL_ID = None
+
+try:
     IS_PREMIUM_USER = False
     USER_SESSION_STRING = getConfig('USER_SESSION_STRING')
     if len(USER_SESSION_STRING) == 0:
