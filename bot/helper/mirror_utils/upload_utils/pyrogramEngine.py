@@ -84,68 +84,137 @@ class TgUploader:
         self.__is_corrupted = False
         try:
             is_video, is_audio = get_media_streams(up_path)
-            if not self.__as_doc:
-                if is_video:
-                    duration = get_media_info(up_path)[0]
-                    if thumb is None:
-                        thumb = take_ss(up_path, duration)
+            if CHANNEL_ID is not None:
+                if not self.__as_doc:
+                    if is_video:
+                        duration = get_media_info(up_path)[0]
+                        if thumb is None:
+                            thumb = take_ss(up_path, duration)
+                            if self.__is_cancelled:
+                                if self.__thumb is None and thumb is not None and ospath.lexists(thumb):
+                                    osremove(thumb)
+                                return
+                        if thumb is not None:
+                            with Image.open(thumb) as img:
+                                width, height = img.size
+                        else:
+                            width = 480
+                            height = 320
+                        if not file_.upper().endswith(("MKV", "MP4")):
+                            file_ = f"{ospath.splitext(file_)[0]}.mp4"
+                            new_path = ospath.join(dirpath, file_)
+                            osrename(up_path, new_path)
+                            up_path = new_path
+                        self.__sent_msg = self.__sent_msg.reply_video(chat_id=int(CHANNEL_ID),
+                                                                    video=up_path,
+                                                                    quote=True,
+                                                                    caption=cap_mono,
+                                                                    duration=duration,
+                                                                    width=width,
+                                                                    height=height,
+                                                                    thumb=thumb,
+                                                                    supports_streaming=True,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
+                    elif is_audio:
+                        duration , artist, title = get_media_info(up_path)
+                        self.__sent_msg = self.__sent_msg.reply_audio(chat_id=int(CHANNEL_ID),
+                                                                    audio=up_path,
+                                                                    quote=True,
+                                                                    caption=cap_mono,
+                                                                    duration=duration,
+                                                                    performer=artist,
+                                                                    title=title,
+                                                                    thumb=thumb,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
+                    elif file_.upper().endswith(IMAGE_SUFFIXES):
+                        self.__sent_msg = self.__sent_msg.reply_photo(chat_id=int(CHANNEL_ID),
+                                                                    photo=up_path,
+                                                                    quote=True,
+                                                                    caption=cap_mono,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
+                    else:
+                        notMedia = True
+                if self.__as_doc or notMedia:
+                    if is_video and thumb is None:
+                        thumb = take_ss(up_path, None)
                         if self.__is_cancelled:
                             if self.__thumb is None and thumb is not None and ospath.lexists(thumb):
                                 osremove(thumb)
                             return
-                    if thumb is not None:
-                        with Image.open(thumb) as img:
-                            width, height = img.size
+                    self.__sent_msg = self.__sent_msg.reply_document(chat_id=int(CHANNEL_ID),
+                                                                    file_name=file_,
+                                                                    document=up_path,
+                                                                    quote=True,
+                                                                    thumb=thumb,
+                                                                    caption=cap_mono,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
+            else:
+                if not self.__as_doc:
+                    if is_video:
+                        duration = get_media_info(up_path)[0]
+                        if thumb is None:
+                            thumb = take_ss(up_path, duration)
+                            if self.__is_cancelled:
+                                if self.__thumb is None and thumb is not None and ospath.lexists(thumb):
+                                    osremove(thumb)
+                                return
+                        if thumb is not None:
+                            with Image.open(thumb) as img:
+                                width, height = img.size
+                        else:
+                            width = 480
+                            height = 320
+                        if not file_.upper().endswith(("MKV", "MP4")):
+                            file_ = f"{ospath.splitext(file_)[0]}.mp4"
+                            new_path = ospath.join(dirpath, file_)
+                            osrename(up_path, new_path)
+                            up_path = new_path
+                        self.__sent_msg = self.__sent_msg.reply_video(video=up_path,
+                                                                    quote=True,
+                                                                    caption=cap_mono,
+                                                                    duration=duration,
+                                                                    width=width,
+                                                                    height=height,
+                                                                    thumb=thumb,
+                                                                    supports_streaming=True,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
+                    elif is_audio:
+                        duration , artist, title = get_media_info(up_path)
+                        self.__sent_msg = self.__sent_msg.reply_audio(audio=up_path,
+                                                                    quote=True,
+                                                                    caption=cap_mono,
+                                                                    duration=duration,
+                                                                    performer=artist,
+                                                                    title=title,
+                                                                    thumb=thumb,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
+                    elif file_.upper().endswith(IMAGE_SUFFIXES):
+                        self.__sent_msg = self.__sent_msg.reply_photo(photo=up_path,
+                                                                    quote=True,
+                                                                    caption=cap_mono,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
                     else:
-                        width = 480
-                        height = 320
-                    if not file_.upper().endswith(("MKV", "MP4")):
-                        file_ = f"{ospath.splitext(file_)[0]}.mp4"
-                        new_path = ospath.join(dirpath, file_)
-                        osrename(up_path, new_path)
-                        up_path = new_path
-                    self.__sent_msg = self.__sent_msg.reply_video(video=up_path,
-                                                                  quote=True,
-                                                                  caption=cap_mono,
-                                                                  duration=duration,
-                                                                  width=width,
-                                                                  height=height,
-                                                                  thumb=thumb,
-                                                                  supports_streaming=True,
-                                                                  disable_notification=True,
-                                                                  progress=self.__upload_progress)
-                elif is_audio:
-                    duration , artist, title = get_media_info(up_path)
-                    self.__sent_msg = self.__sent_msg.reply_audio(audio=up_path,
-                                                                  quote=True,
-                                                                  caption=cap_mono,
-                                                                  duration=duration,
-                                                                  performer=artist,
-                                                                  title=title,
-                                                                  thumb=thumb,
-                                                                  disable_notification=True,
-                                                                  progress=self.__upload_progress)
-                elif file_.upper().endswith(IMAGE_SUFFIXES):
-                    self.__sent_msg = self.__sent_msg.reply_photo(photo=up_path,
-                                                                  quote=True,
-                                                                  caption=cap_mono,
-                                                                  disable_notification=True,
-                                                                  progress=self.__upload_progress)
-                else:
-                    notMedia = True
-            if self.__as_doc or notMedia:
-                if is_video and thumb is None:
-                    thumb = take_ss(up_path, None)
-                    if self.__is_cancelled:
-                        if self.__thumb is None and thumb is not None and ospath.lexists(thumb):
-                            osremove(thumb)
-                        return
-                self.__sent_msg = self.__sent_msg.reply_document(document=up_path,
-                                                                 quote=True,
-                                                                 thumb=thumb,
-                                                                 caption=cap_mono,
-                                                                 disable_notification=True,
-                                                                 progress=self.__upload_progress)
+                        notMedia = True
+                if self.__as_doc or notMedia:
+                    if is_video and thumb is None:
+                        thumb = take_ss(up_path, None)
+                        if self.__is_cancelled:
+                            if self.__thumb is None and thumb is not None and ospath.lexists(thumb):
+                                osremove(thumb)
+                            return
+                    self.__sent_msg = self.__sent_msg.reply_document(document=up_path,
+                                                                    quote=True,
+                                                                    thumb=thumb,
+                                                                    caption=cap_mono,
+                                                                    disable_notification=True,
+                                                                    progress=self.__upload_progress)
         except FloodWait as f:
             LOGGER.warning(str(f))
             sleep(f.value)
